@@ -227,7 +227,7 @@ stages:
         - task: GitHubRelease@0
           displayName: "Update Github Release"
           inputs:
-            gitHubConnection: qno
+            gitHubConnection: github.com_qno
             repositoryName: qno/Meander
             action: edit
             tag: Nightly
