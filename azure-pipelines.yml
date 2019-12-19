@@ -171,24 +171,6 @@ stages:
           inputs:
             path: $(System.DefaultWorkingDirectory)\build\dist
             artifact: Plugin-Win
-  #  - job: VisualStudio
-  #    pool:
-  #      vmImage: vs2017-win2016
-  #    steps:
-  #      - task: UsePythonVersion@0
-  #        inputs:
-  #         versionSpec: $(python-version)
-  #      - script: |
-  #          python -m pip install --upgrade pip
-  #          python -m pip install $(conan-pkg)
-  #          python -m pip install $(cpt-pkg) $(bpt-pkg)
-  #          $(conan-add-remotes)
-  #          mkdir build
-  #          cd build
-  #          conan install .. -s build_type=Release
-  #          cmake -G "Visual Studio 15 Win64" -DCMAKE_BUILD_TYPE=Release ..
-  #          cmake --build . --target install
-  #        displayName: build Plugin
 - stage: publish
   displayName: Publish Plugin
   dependsOn: build
