@@ -176,6 +176,8 @@ stages:
   dependsOn: build
   jobs:
     - job: PublishArtifacts
+      pool:
+        vmImage: 'ubuntu-16.04'
       steps:
         - task: DownloadPipelineArtifact@2
           inputs:
@@ -198,22 +200,8 @@ stages:
             patterns: "**/*.zip"
             targetPath: $(Build.ArtifactStagingDirectory)
         - script: |
-            ls -l $(Build.ArtifactStagingDirectory)
-            export EXTEND_TAG=`date "+%Y%m%d"`
-            for file in $(Build.ArtifactStagingDirectory)/*.zip; do mv "$file" "${file/.zip/-${EXTEND_TAG}.zip}"; done
-            ls -l $(Build.ArtifactStagingDirectory)
-          displayName: Tag asset names with Date
-        #- script: |
-        #    cat "last build"  > $(Build.ArtifactStagingDirectory)/ReleaseNotes.md
-        #  displayName: Fake up release notes
-        - task: GitHubRelease@0
-          displayName: "Update Github Release"
-          inputs:
-            gitHubConnection: github.com_qno
-            repositoryName: qno/Meander
-            action: edit
-            tag: Nightly
-            target: '$(Build.SourceVersion)'
-            addChangeLog: false
-        #    releaseNotesFile: $(Build.ArtifactStagingDirectory)/ReleaseNotes.md
-            assets: $(Build.ArtifactStagingDirectory)/*.zip
+            ls -la $(Build.ArtifactStagingDirectory)
+            wget https://github.com/tcnksm/ghr/releases/download/v0.12.1/ghr_v0.12.1_linux_amd64.tar.gz
+            tar xf *gz --strip-components=1
+            ./ghr -u qno -r VCVRack-Release-Demo -t $(GITHUB_API_TOKEN) -prerelease -replace Nightly $(Build.ArtifactStagingDirectory)
+          displayName: upload assets to Github Release
