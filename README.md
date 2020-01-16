@@ -1,2 +1,6 @@
 # Meander
-Meander plugin module for VCV Rack.  This module is still in development.  This is an alpha version.  12/8/2019
+Meander plugin module for VCV Rack.  First release V1.0.1 1/13/2020
+
+![Meander](./res/Meander.png)
+
+
