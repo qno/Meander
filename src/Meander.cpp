@@ -116,6 +116,8 @@ struct Meander : Module
 		BUTTON_ENABLE_BASS_STACCATO_PARAM,
 
 		BUTTON_BASS_OCTAVES_PARAM,
+
+		BUTTON_PROG_STEP_PARAM,
 				
 		
 		NUM_PARAMS
@@ -190,7 +192,9 @@ struct Meander : Module
 		IN_ENABLE_BASS_STACCATO_EXT_CV,
 
 		IN_BASS_OCTAVES_EXT_CV,
-		
+
+		IN_PROG_STEP_EXT_CV,
+				
 
 		NUM_INPUTS
 		
@@ -224,6 +228,7 @@ struct Meander : Module
 		OUT_MELODY_VOLUME_OUTPUT,
 		OUT_HARMONY_VOLUME_OUTPUT,
 		OUT_BASS_VOLUME_OUTPUT,
+		
 		NUM_OUTPUTS
 	};
 
@@ -293,6 +298,8 @@ struct Meander : Module
 		LIGHT_LEDBUTTON_ENABLE_BASS_STACCATO_PARAM,
 
 		LIGHT_LEDBUTTON_BASS_OCTAVES_PARAM,
+
+		LIGHT_LEDBUTTON_PROG_STEP_PARAM,
 		
 		NUM_LIGHTS
 	};
@@ -394,7 +401,7 @@ struct Meander : Module
 				theMeanderState.theHarmonyParms.last[j].time32s=barts_count;
 				theMeanderState.theHarmonyParms.last[j].countInBar=bar_note_count;
 				if (bar_note_count<256)
-				played_notes_circular_buffer[bar_note_count++]=theMeanderState. theHarmonyParms.last[j];
+				played_notes_circular_buffer[bar_note_count++]=theMeanderState.theHarmonyParms.last[j];
 			}
             
 		}
@@ -405,7 +412,7 @@ struct Meander : Module
 		if (doDebug) DEBUG("doHarmony");
 		if (doDebug) DEBUG("doHarmony() theActiveHarmonyType.min_steps=%d, theActiveHarmonyType.max_steps=%d", theActiveHarmonyType.min_steps, theActiveHarmonyType.max_steps );
 
-		outputs[OUT_HARMONY_VOLUME_OUTPUT].setVoltage(theMeanderState. theHarmonyParms.volume);
+		outputs[OUT_HARMONY_VOLUME_OUTPUT].setVoltage(theMeanderState.theHarmonyParms.volume);
 		
 		clock_t current_cpu_t= clock();  // cpu clock ticks since program began
 		double current_cpu_time_double= (double)(current_cpu_t) / (double)CLOCKS_PER_SEC;
@@ -433,13 +440,13 @@ struct Meander : Module
 		}
 		else  // theMeanderState.userControllingHarmonyFromCircle
 		{
-			if (doDebug) DEBUG("doHarmony() theMeanderState.userControllingHarmonyFromCircle %d", theMeanderState. theHarmonyParms.last[0]);
+			if (doDebug) DEBUG("doHarmony() theMeanderState.userControllingHarmonyFromCircle %d", theMeanderState.theHarmonyParms.last[0]);
 			outputs[OUT_HARMONY_CV_OUTPUT].setChannels(3);  // set polyphony
 			for (int j=0;j<3;++j) 
 			{
 				int note_to_play=1;
 		
-				note_to_play=theMeanderState. theHarmonyParms.last[j].note;
+				note_to_play=theMeanderState.theHarmonyParms.last[j].note;
 
 				outputs[OUT_HARMONY_CV_OUTPUT].setVoltage((note_to_play/12.0)-1.0,j);  // (note, channel)	
 					
@@ -654,7 +661,7 @@ struct Meander : Module
 		for (int j=0;j<num_chord_members;++j) 
 		{
 				if (doDebug) DEBUG("num_step_chord_notes[%d]=%d", step, num_step_chord_notes[step]);
-				current_chord_notes[j]= step_chord_notes[step][(int)(theMeanderState. theHarmonyParms.note_avg*num_step_chord_notes[step])+j]; // do not create inversion
+				current_chord_notes[j]= step_chord_notes[step][(int)(theMeanderState.theHarmonyParms.note_avg*num_step_chord_notes[step])+j]; // do not create inversion
 				if (doDebug) DEBUG("current_chord_notes[%d]=%d %s", j, current_chord_notes[j], note_desig[current_chord_notes[j]%MAX_NOTES]);
 				
 				int note_to_play=current_chord_notes[j];
@@ -678,13 +685,14 @@ struct Meander : Module
 					outputs[OUT_HARMONY_CV_OUTPUT].setVoltage((note_to_play/12.0)-4.0,j);  // (note, channel)
 				}
 		}
+
 		if (theMeanderState.theHarmonyParms.enabled)
 		{ 
-			outputs[OUT_HARMONY_VOLUME_OUTPUT].setVoltage(theMeanderState. theHarmonyParms.volume);
+			outputs[OUT_HARMONY_VOLUME_OUTPUT].setVoltage(theMeanderState.theHarmonyParms.volume);
 
 			// output some fBm noise
 			outputs[OUT_FBM_HARMONY_OUTPUT].setChannels(1);  // set polyphony  
-			outputs[OUT_FBM_HARMONY_OUTPUT].setVoltage((float)clamp((10.f*fBmrand), 0.f, 10.f) ,0); // rescale fBm output to 0-10V so it can be used better for CV
+		//	outputs[OUT_FBM_HARMONY_OUTPUT].setVoltage((float)clamp((10.f*fBmrand), 0.f, 10.f) ,0); // rescale fBm output to 0-10V so it can be used better for CV
 
 			float durationFactor=1.0;
 			if (theMeanderState.theHarmonyParms.enable_staccato)
@@ -695,6 +703,8 @@ struct Meander : Module
 			float note_duration=durationFactor*time_sig_top/(frequency*theMeanderState.theHarmonyParms.note_length_divisor);
 		    harmonyGatePulse.trigger(note_duration);  
 		}
+
+		outputs[OUT_FBM_HARMONY_OUTPUT].setVoltage((float)clamp((10.f*fBmrand), 0.f, 10.f) ,0); // rescale fBm output to 0-10V so it can be used better for CV.  Output even if harmony disabled
 
 		++circle_step_index;
 		if (circle_step_index>=theActiveHarmonyType.num_harmony_steps)
@@ -713,7 +723,7 @@ struct Meander : Module
 	{
 		if (doDebug) DEBUG("doMelody()");
 
-		outputs[OUT_MELODY_VOLUME_OUTPUT].setVoltage(theMeanderState. theMelodyParms.volume);
+		outputs[OUT_MELODY_VOLUME_OUTPUT].setVoltage(theMeanderState.theMelodyParms.volume);
 		clock_t current_cpu_t= clock();  // cpu clock ticks since program began
 		double current_cpu_time_double= (double)(current_cpu_t) / (double)CLOCKS_PER_SEC;
 	
@@ -956,7 +966,7 @@ struct Meander : Module
 	{
 		if (doDebug) DEBUG("doBass()");
 
-	    outputs[OUT_BASS_VOLUME_OUTPUT].setVoltage(theMeanderState. theBassParms.volume);
+	    outputs[OUT_BASS_VOLUME_OUTPUT].setVoltage(theMeanderState.theBassParms.volume);
 				
 		if (theMeanderState.theBassParms.enabled) 
 		{
@@ -1028,12 +1038,16 @@ struct Meander : Module
 	dsp::SchmittTrigger reset_btn_trig;
 	dsp::SchmittTrigger reset_ext_trig;
 	dsp::SchmittTrigger bpm_mode_trig;
+	dsp::SchmittTrigger step_button_trig;
 
 	dsp::PulseGenerator resetPulse;
 	bool reset_pulse = false;
 
 	dsp::PulseGenerator runPulse;
 	bool run_pulse = false;
+
+	dsp::PulseGenerator stepPulse;
+	bool step_pulse = false;
 
 	// PULSES FOR TRIGGER OUTPUTS INSTEAD OF GATES
 	dsp::PulseGenerator clockPulse32ts;
@@ -1053,6 +1067,7 @@ struct Meander : Module
 
 	const float lightLambda = 0.075f;
 	float resetLight = 0.0f;
+	float stepLight = 0.0f;
 
 	bool running = true;
 	
@@ -1137,7 +1152,8 @@ struct Meander : Module
 	rack::dsp::PulseGenerator barGaterPulse; 
 
 	bool time_sig_changed=false;
-   
+
+	int override_step=1;
     	
 	void process(const ProcessArgs &args) override 
 	{
@@ -1149,7 +1165,8 @@ struct Meander : Module
 			return;
 
 		//Run
-		if (RunToggle.process(params[BUTTON_RUN_PARAM].getValue()) || inputs[IN_RUN_EXT_CV].getVoltage()) 
+	
+		if (RunToggle.process(params[BUTTON_RUN_PARAM].getValue() || inputs[IN_RUN_EXT_CV].getVoltage()))  
 		{ 
 			if (!running)
 				bar_note_count=0;  // reinitialize if running just starting
@@ -1222,9 +1239,75 @@ struct Meander : Module
 		}
 
 		resetLight -= resetLight / lightLambda / args.sampleRate;
-		lights[LIGHT_LEDBUTTON_RESET].value = resetLight;
+		lights[LIGHT_LEDBUTTON_RESET].value = resetLight; 
 		reset_pulse = resetPulse.process(1.0 / args.sampleRate);
   		outputs[OUT_RESET_OUT].setVoltage((reset_pulse ? 10.0f : 0.0f));
+        
+	
+		if ((step_button_trig.process(params[BUTTON_PROG_STEP_PARAM].getValue() || (  inputs[IN_PROG_STEP_EXT_CV].isConnected()  &&  (inputs[IN_PROG_STEP_EXT_CV].getVoltage() > 0.))))) 
+		{
+			if (theMeanderState.theHarmonyParms.enabled)
+			{
+				theMeanderState.theHarmonyParms.enabled = false;
+				theMeanderState.userControllingHarmonyFromCircle=true;
+				override_step=0;
+			}
+			else
+			{
+				++override_step;
+				if (override_step>=theActiveHarmonyType.num_harmony_steps)
+				  override_step=0;
+			    
+			}
+			theMeanderState.last_harmony_step=override_step;
+		
+			int current_circle_position=0;
+
+			int degreeStep=(theActiveHarmonyType.harmony_steps[override_step])%8;  
+			
+			//find this in semicircle
+			for (int j=0; j<7; ++j)
+			{
+				if  (theCircleOf5ths.theDegreeSemiCircle.degreeElements[j].Degree==degreeStep)
+				{
+					current_circle_position = theCircleOf5ths.theDegreeSemiCircle.degreeElements[j].CircleIndex; 
+					if (doDebug) DEBUG("harmony step edit-pt2 current_circle_position=%d", current_circle_position);
+					break;
+				}
+			}
+		
+			stepLight = 1.0;
+			stepPulse.trigger(0.01f);  // necessary to pass on reset below vis resetPuls.process()
+           			
+			userPlaysCirclePosition(current_circle_position, theMeanderState.theHarmonyParms.target_octave-3); 
+			if (running)
+			{
+				doHarmony();
+			}
+
+			for (int i=0; i<12; ++i) 
+				{
+					CircleStepStates[i] = false;
+					lights[LIGHT_LEDBUTTON_CIRCLESTEP_1+i].value=CircleStepStates[i] ? 1.0f : 0.0f;	
+				}
+			
+			lights[LIGHT_LEDBUTTON_CIRCLESTEP_1+current_circle_position].value=1.0f;
+	
+			CircleStepSetStates[override_step] = true;
+			lights[LIGHT_LEDBUTTON_CIRCLESETSTEP_1+override_step].value=CircleStepSetStates[override_step] ? 1.0f : 0.25f;
+			
+			for (int j=0; j<theActiveHarmonyType.num_harmony_steps; ++j) {
+				if (j!=override_step) {
+					CircleStepSetStates[j] = false;
+					lights[LIGHT_LEDBUTTON_CIRCLESETSTEP_1+j].value=0.25f;
+				}
+			}
+		}
+
+		stepLight -= stepLight / lightLambda / args.sampleRate;
+		lights[LIGHT_LEDBUTTON_PROG_STEP_PARAM].value = stepLight;
+		step_pulse = stepPulse.process(1.0 / args.sampleRate);
+
 
 		if(!running)
 		{
@@ -1255,7 +1338,7 @@ struct Meander : Module
 			barts_count_limit = (32*time_sig_top/time_sig_bottom);
 		}
 
-		if(running) 
+		if(running)  
 		{
 						 
 			LFOclock.step(1.0 / args.sampleRate);
@@ -1271,8 +1354,7 @@ struct Meander : Module
 				if (ST_32ts_trig.process(LFOclock.sqr()))
 					 clockTick=true;
 			}
-			
-				   
+				
 		    if (clockTick)
 			{
 				bool melodyPlayed=false;   // set to prevent arp note being played on the melody beat
@@ -1387,9 +1469,7 @@ struct Meander : Module
 				}
 				if ((theMeanderState.theArpParms.enabled)&&(theMeanderState.theArpParms.note_length_divisor==32)&&(!melodyPlayed))
 					doArp(); 
-								
-				clockPulse32ts.trigger(trigger_length);
-
+							
 				// output some fBm noise
 				double period=1.0/theMeanderState.theArpParms.period; // 1/seconds
 				double fBmarg=theMeanderState.theArpParms.seed + (double)(period*current_cpu_time_double); 
@@ -1405,6 +1485,7 @@ struct Meander : Module
 				i16ts_count++;
 				i32ts_count++;
 				
+				clockPulse32ts.trigger(trigger_length);  // retrigger the pulse after all done in this loop
 			}
 		}
 
@@ -1467,47 +1548,47 @@ struct Meander : Module
 	        
 		if (HarmonyEnableToggle.process(params[BUTTON_ENABLE_HARMONY_PARAM].getValue())) 
 		{
-			theMeanderState. theHarmonyParms.enabled = !theMeanderState. theHarmonyParms.enabled;
+			theMeanderState.theHarmonyParms.enabled = !theMeanderState.theHarmonyParms.enabled;
 			theMeanderState.userControllingHarmonyFromCircle=false;
 		}
-		lights[LIGHT_LEDBUTTON_HARMONY_ENABLE].value = theMeanderState. theHarmonyParms.enabled ? 1.0f : 0.0f; 
+		lights[LIGHT_LEDBUTTON_HARMONY_ENABLE].value = theMeanderState.theHarmonyParms.enabled ? 1.0f : 0.0f; 
 
 		if (HarmonyEnableAll7thsToggle.process(params[BUTTON_ENABLE_HARMONY_ALL7THS_PARAM].getValue())) 
 		{
-			theMeanderState. theHarmonyParms.enable_all_7ths = !theMeanderState. theHarmonyParms.enable_all_7ths;
+			theMeanderState.theHarmonyParms.enable_all_7ths = !theMeanderState.theHarmonyParms.enable_all_7ths;
 			setup_harmony();  // calculate harmony notes
 			circleChanged=true;
 		}
-		lights[LIGHT_LEDBUTTON_ENABLE_HARMONY_ALL7THS_PARAM].value = theMeanderState. theHarmonyParms.enable_all_7ths ? 1.0f : 0.0f; 
+		lights[LIGHT_LEDBUTTON_ENABLE_HARMONY_ALL7THS_PARAM].value = theMeanderState.theHarmonyParms.enable_all_7ths ? 1.0f : 0.0f; 
 
 		if (HarmonyEnableV7thsToggle.process(params[BUTTON_ENABLE_HARMONY_V7THS_PARAM].getValue())) 
 		{
-			theMeanderState. theHarmonyParms.enable_V_7ths = !theMeanderState. theHarmonyParms.enable_V_7ths;
+			theMeanderState.theHarmonyParms.enable_V_7ths = !theMeanderState.theHarmonyParms.enable_V_7ths;
 			setup_harmony();
 			circleChanged=true;
 		}
-		lights[LIGHT_LEDBUTTON_ENABLE_HARMONY_V7THS_PARAM].value = theMeanderState. theHarmonyParms.enable_V_7ths ? 1.0f : 0.0f; 
+		lights[LIGHT_LEDBUTTON_ENABLE_HARMONY_V7THS_PARAM].value = theMeanderState.theHarmonyParms.enable_V_7ths ? 1.0f : 0.0f; 
 //
 		if (HarmonyEnableStaccatoToggle.process(params[BUTTON_ENABLE_HARMONY_STACCATO_PARAM].getValue())) 
 		{
-			theMeanderState. theHarmonyParms.enable_staccato = !theMeanderState. theHarmonyParms.enable_staccato;
+			theMeanderState.theHarmonyParms.enable_staccato = !theMeanderState.theHarmonyParms.enable_staccato;
 	
 		}
-		lights[LIGHT_LEDBUTTON_ENABLE_HARMONY_STACCATO_PARAM].value = theMeanderState. theHarmonyParms.enable_staccato ? 1.0f : 0.0f; 
+		lights[LIGHT_LEDBUTTON_ENABLE_HARMONY_STACCATO_PARAM].value = theMeanderState.theHarmonyParms.enable_staccato ? 1.0f : 0.0f; 
 
 		if (MelodyEnableStaccatoToggle.process(params[BUTTON_ENABLE_MELODY_STACCATO_PARAM].getValue())) 
 		{
-			theMeanderState. theMelodyParms.enable_staccato = !theMeanderState. theMelodyParms.enable_staccato;
+			theMeanderState.theMelodyParms.enable_staccato = !theMeanderState.theMelodyParms.enable_staccato;
 	
 		}
-		lights[LIGHT_LEDBUTTON_ENABLE_MELODY_STACCATO_PARAM].value = theMeanderState. theMelodyParms.enable_staccato ? 1.0f : 0.0f; 
+		lights[LIGHT_LEDBUTTON_ENABLE_MELODY_STACCATO_PARAM].value = theMeanderState.theMelodyParms.enable_staccato ? 1.0f : 0.0f; 
 
 		if (BassEnableStaccatoToggle.process(params[BUTTON_ENABLE_BASS_STACCATO_PARAM].getValue())) 
 		{
-			theMeanderState. theBassParms.enable_staccato = !theMeanderState. theBassParms.enable_staccato;
+			theMeanderState.theBassParms.enable_staccato = !theMeanderState.theBassParms.enable_staccato;
 	
 		}
-		lights[LIGHT_LEDBUTTON_ENABLE_BASS_STACCATO_PARAM].value = theMeanderState. theBassParms.enable_staccato ? 1.0f : 0.0f; 
+		lights[LIGHT_LEDBUTTON_ENABLE_BASS_STACCATO_PARAM].value = theMeanderState.theBassParms.enable_staccato ? 1.0f : 0.0f; 
 //
 		
 		if (BassEnableToggle.process(params[BUTTON_ENABLE_BASS_PARAM].getValue())) 
@@ -1619,8 +1700,8 @@ struct Meander : Module
 				if (running)
 				{
 					theMeanderState.userControllingHarmonyFromCircle=true;
-					theMeanderState. theHarmonyParms.enabled=false;
-					lights[LIGHT_LEDBUTTON_HARMONY_ENABLE].value = theMeanderState. theHarmonyParms.enabled ? 1.0f : 0.0f; 
+					theMeanderState.theHarmonyParms.enabled=false;
+					lights[LIGHT_LEDBUTTON_HARMONY_ENABLE].value = theMeanderState.theHarmonyParms.enabled ? 1.0f : 0.0f; 
 					doHarmony();
 				}
 
@@ -1714,11 +1795,11 @@ struct Meander : Module
         float circleDegree=0;
 		float gateValue=0;
 		if (  (inputs[IN_HARMONY_CIRCLE_GATE_EXT_CV].isConnected())
-			&&((gateValue=inputs[IN_HARMONY_CIRCLE_GATE_EXT_CV].getVoltage()))
+			&&((gateValue=inputs[IN_HARMONY_CIRCLE_GATE_EXT_CV].getVoltage())>0)
 			&&((circleDegree=inputs[IN_HARMONY_CIRCLE_POSITION_EXT_CV].getVoltage())>=0) 
-			&&(circleDegree!=theMeanderState. theHarmonyParms.lastCircleDegreeIn) )  
+			&&(circleDegree!=theMeanderState.theHarmonyParms.lastCircleDegreeIn) )  
 		{
-			theMeanderState. theHarmonyParms.lastCircleDegreeIn=circleDegree;
+			theMeanderState.theHarmonyParms.lastCircleDegreeIn=circleDegree;
 			if (doDebug) DEBUG("IN_HARMONY_CIRCLE_GATE_EXT_CV is connected and circleDegree=%f", circleDegree);
 
 			extHarmonyIn=circleDegree;
@@ -1727,92 +1808,102 @@ struct Meander : Module
 		
 		//	DEBUG("IN_HARMONY_CIRCLE_POSITION_EXT_CV circleDegree=%f", circleDegree);
 
+		    bool degreeChanged=true; // assume true unless determined false below
+
 		    if (gateValue==circleDegree)  // MarkovSeq ot other 1-7V 
 			{
-				octave=theMeanderState. theHarmonyParms.target_octave-1;
+				octave=theMeanderState.theHarmonyParms.target_octave-3;
 				if (doDebug) DEBUG("IN_HARMONY_CIRCLE_POSITION_EXT_CV circleDegree=%f", circleDegree);
-				if ((std::abs(circleDegree-1.)<.01)) theMeanderState.circleDegree=1;
+				if ((std::abs(circleDegree-1.)<.1)) theMeanderState.circleDegree=1;
 				else
-				if ((std::abs(circleDegree-2.)<.01)) theMeanderState.circleDegree=2;
+				if ((std::abs(circleDegree-2.)<.1)) theMeanderState.circleDegree=2;
 				else
-				if ((std::abs(circleDegree-3.)<.01)) theMeanderState.circleDegree=3;
+				if ((std::abs(circleDegree-3.)<.1)) theMeanderState.circleDegree=3;
 				else
-				if ((std::abs(circleDegree-4.)<.01)) theMeanderState.circleDegree=4;
+				if ((std::abs(circleDegree-4.)<.1)) theMeanderState.circleDegree=4;
 				else
-				if ((std::abs(circleDegree-5.)<.01)) theMeanderState.circleDegree=5;
+				if ((std::abs(circleDegree-5.)<.1)) theMeanderState.circleDegree=5;
 				else
-				if ((std::abs(circleDegree-6.)<.01)) theMeanderState.circleDegree=6;
+				if ((std::abs(circleDegree-6.)<.1)) theMeanderState.circleDegree=6;
 				else
-				if ((std::abs(circleDegree-7.)<.01)) theMeanderState.circleDegree=7;
+				if ((std::abs(circleDegree-7.)<.1)) theMeanderState.circleDegree=7;
+				else
+					degreeChanged=false;	
 			}
 			else  // keyboard  C-B
 			{
-				circleDegree=(float)std::fmod(std::fabs(circleDegree), 1.0);
+				circleDegree=(float)std::fmod(std::fabs(circleDegree), 1.0f);
 				if (doDebug) DEBUG("IN_HARMONY_CIRCLE_POSITION_EXT_CV circleDegree=%f", circleDegree);
-				if ((std::abs(circleDegree-0)<.01))    theMeanderState.circleDegree=1;
+				if ((std::abs(circleDegree)<.005f))    theMeanderState.circleDegree=1;
 				else
-				if ((std::abs(circleDegree-.167)<.01)) theMeanderState.circleDegree=2;
+				if ((std::abs(circleDegree-.167f)<.005f)) theMeanderState.circleDegree=2;
 				else
-				if ((std::abs(circleDegree-.334)<.01)) theMeanderState.circleDegree=3;
+				if ((std::abs(circleDegree-.333f)<.005f)) theMeanderState.circleDegree=3;
 				else
-				if ((std::abs(circleDegree-.417)<.01)) theMeanderState.circleDegree=4;
+				if ((std::abs(circleDegree-.417f)<.005f)) theMeanderState.circleDegree=4;
 				else
-				if ((std::abs(circleDegree-.584)<.01)) theMeanderState.circleDegree=5;
+				if ((std::abs(circleDegree-.583f)<.005f)) theMeanderState.circleDegree=5;
 				else
-				if ((std::abs(circleDegree-.751)<.01)) theMeanderState.circleDegree=6;
+				if ((std::abs(circleDegree-.750f)<.005f)) theMeanderState.circleDegree=6;
 				else
-				if ((std::abs(circleDegree-.917)<.01)) theMeanderState.circleDegree=7;
+				if ((std::abs(circleDegree-.917f)<.005f)) theMeanderState.circleDegree=7;
+				else
+					degreeChanged=false;	
+				
 			}
 			
+            if (degreeChanged)
+			{
+				if (theMeanderState.circleDegree<1)
+					theMeanderState.circleDegree=1;
+				if (theMeanderState.circleDegree>7)
+					theMeanderState.circleDegree=7;
+				
 
-			if (theMeanderState.circleDegree<1)
-				theMeanderState.circleDegree=1;
-			if (theMeanderState.circleDegree>7)
-				theMeanderState.circleDegree=7;
+				if (doDebug) DEBUG("IN_HARMONY_CIRCLE_POSITION_EXT_CV=%d", (int)theMeanderState.circleDegree);
+
+				int step=1;
+				for (int i=0; i<MAX_STEPS; ++i)
+				{
+					if (theActiveHarmonyType.harmony_steps[i]==theMeanderState.circleDegree)
+					{
+						step=i;
+						break;
+					}
+				}
+
+				theMeanderState.last_harmony_step=step;
+
+				int theCirclePosition=0;
+				for (int i=0; i<7; ++i)
+				{
+					if (theCircleOf5ths.theDegreeSemiCircle.degreeElements[i].Degree==theMeanderState.circleDegree)
+					{
+						theCirclePosition=theCircleOf5ths.theDegreeSemiCircle.degreeElements[i].CircleIndex;
+						break;
+					}
+				}
+
+				last_circle_position=theCirclePosition;
+
+			//	userPlaysCirclePosition(theCirclePosition, octave); 
+				userPlaysCirclePosition(theCirclePosition, octave+theMeanderState.theHarmonyParms.target_octave-2); 
+
+				if (running)
+				{
+					theMeanderState.userControllingHarmonyFromCircle=true;
+					theMeanderState.theHarmonyParms.enabled=false;
+					doHarmony();
+				}
+
+				for (int i=0; i<12; ++i) 
+				{
+					CircleStepStates[i] = false;
+					lights[LIGHT_LEDBUTTON_CIRCLESTEP_1+i].value=CircleStepStates[i] ? 1.0f : 0.0f;	
+				}
 			
-
-			if (doDebug) DEBUG("IN_HARMONY_CIRCLE_POSITION_EXT_CV=%d", (int)theMeanderState.circleDegree);
-
-			int step=1;
-			for (int i=0; i<MAX_STEPS; ++i)
-			{
-				if (theActiveHarmonyType.harmony_steps[i]==theMeanderState.circleDegree)
-				{
-					step=i;
-					break;
-				}
+				lights[LIGHT_LEDBUTTON_CIRCLESTEP_1+theCirclePosition].value=1.0f;
 			}
-
-			theMeanderState.last_harmony_step=step;
-
-			int theCirclePosition=0;
-			for (int i=0; i<7; ++i)
-			{
-				if (theCircleOf5ths.theDegreeSemiCircle.degreeElements[i].Degree==theMeanderState.circleDegree)
-				{
-					theCirclePosition=theCircleOf5ths.theDegreeSemiCircle.degreeElements[i].CircleIndex;
-					break;
-				}
-			}
-
-			last_circle_position=theCirclePosition;
-
-			userPlaysCirclePosition(theCirclePosition, octave); 
-
-			if (running)
-			{
-				theMeanderState.userControllingHarmonyFromCircle=true;
-				theMeanderState. theHarmonyParms.enabled=false;
-			}
-
-			for (int i=0; i<12; ++i) 
-			{
-				CircleStepStates[i] = false;
-				lights[LIGHT_LEDBUTTON_CIRCLESTEP_1+i].value=CircleStepStates[i] ? 1.0f : 0.0f;	
-			}
-		
-			lights[LIGHT_LEDBUTTON_CIRCLESTEP_1+theCirclePosition].value=1.0f;
-
 			
 		}
 		
@@ -1957,10 +2048,10 @@ struct Meander : Module
 
 							case IN_HARMONY_ENABLE_EXT_CV:
 								if (fvalue>0)
-									theMeanderState. theHarmonyParms.enabled = true;
+									theMeanderState.theHarmonyParms.enabled = true;
 								else
 								if (fvalue==0)
-									theMeanderState. theHarmonyParms.enabled = false;
+									theMeanderState.theHarmonyParms.enabled = false;
 								else
 								if (fvalue<0) 
 								{
@@ -2071,14 +2162,14 @@ struct Meander : Module
 							case IN_ENABLE_HARMONY_ALL7THS_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theHarmonyParms.enable_all_7ths = true;
+									theMeanderState.theHarmonyParms.enable_all_7ths = true;
 									setup_harmony();  // calculate harmony notes
 									circleChanged=true;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theHarmonyParms.enable_all_7ths = false;
+									theMeanderState.theHarmonyParms.enable_all_7ths = false;
 									setup_harmony();  // calculate harmony notes
 									circleChanged=true;
 								}
@@ -2092,14 +2183,14 @@ struct Meander : Module
 							case IN_ENABLE_HARMONY_V7THS_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theHarmonyParms.enable_V_7ths = true;
+									theMeanderState.theHarmonyParms.enable_V_7ths = true;
 									setup_harmony();  // calculate harmony notes
 									circleChanged=true;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theHarmonyParms.enable_V_7ths = false;
+									theMeanderState.theHarmonyParms.enable_V_7ths = false;
 									setup_harmony();  // calculate harmony notes
 									circleChanged=true;
 								}
@@ -2113,12 +2204,12 @@ struct Meander : Module
 							case IN_ENABLE_HARMONY_STACCATO_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theHarmonyParms.enable_staccato = true;
+									theMeanderState.theHarmonyParms.enable_staccato = true;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theHarmonyParms.enable_staccato = false;
+									theMeanderState.theHarmonyParms.enable_staccato = false;
 								}
 								else
 								if (fvalue<0) 
@@ -2149,10 +2240,10 @@ struct Meander : Module
 
 							case IN_MELODY_ENABLE_EXT_CV:
 								if (fvalue>0)
-									theMeanderState. theMelodyParms.enabled = true;
+									theMeanderState.theMelodyParms.enabled = true;
 								else
 								if (fvalue==0)
-									theMeanderState. theMelodyParms.enabled = false;
+									theMeanderState.theMelodyParms.enabled = false;
 								else
 								if (fvalue<0) 
 								{
@@ -2243,12 +2334,12 @@ struct Meander : Module
 							case IN_MELODY_DESTUTTER_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theMelodyParms.destutter = true;
+									theMeanderState.theMelodyParms.destutter = true;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theMelodyParms.destutter = false;
+									theMeanderState.theMelodyParms.destutter = false;
 								}
 								else
 								if (fvalue<0) 
@@ -2261,12 +2352,12 @@ struct Meander : Module
 							case IN_ENABLE_MELODY_STACCATO_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theMelodyParms.enable_staccato = true;
+									theMeanderState.theMelodyParms.enable_staccato = true;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theMelodyParms.enable_staccato = false;
+									theMeanderState.theMelodyParms.enable_staccato = false;
 								}
 								else
 								if (fvalue<0) 
@@ -2278,14 +2369,14 @@ struct Meander : Module
 							case IN_ENABLE_MELODY_CHORDAL_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theMelodyParms.chordal = true;
-									theMeanderState. theMelodyParms.scaler = false;
+									theMeanderState.theMelodyParms.chordal = true;
+									theMeanderState.theMelodyParms.scaler = false;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theMelodyParms.chordal = false;
-									theMeanderState. theMelodyParms.scaler = true;
+									theMeanderState.theMelodyParms.chordal = false;
+									theMeanderState.theMelodyParms.scaler = true;
 								}
 								else
 								if (fvalue<0) 
@@ -2297,13 +2388,13 @@ struct Meander : Module
 							case IN_MELODY_SCALER_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theMelodyParms.scaler = true;
+									theMeanderState.theMelodyParms.scaler = true;
 									theMeanderState.theMelodyParms.chordal = false;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theMelodyParms.scaler = false;
+									theMeanderState.theMelodyParms.scaler = false;
 									theMeanderState.theMelodyParms.chordal = true;
 								}
 								else
@@ -2318,10 +2409,10 @@ struct Meander : Module
 
 							case IN_ARP_ENABLE_EXT_CV:
 								if (fvalue>0)
-									theMeanderState. theArpParms.enabled = true;
+									theMeanderState.theArpParms.enabled = true;
 								else
 								if (fvalue==0)
-									theMeanderState. theArpParms.enabled = false;
+									theMeanderState.theArpParms.enabled = false;
 								else
 								if (fvalue<0) 
 								{
@@ -2377,14 +2468,14 @@ struct Meander : Module
 							case IN_ENABLE_ARP_CHORDAL_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theArpParms.chordal = true;
-									theMeanderState. theArpParms.scaler = false;
+									theMeanderState.theArpParms.chordal = true;
+									theMeanderState.theArpParms.scaler = false;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theArpParms.chordal = false;
-									theMeanderState. theArpParms.scaler = true;
+									theMeanderState.theArpParms.chordal = false;
+									theMeanderState.theArpParms.scaler = true;
 								}
 								else
 								if (fvalue<0) 
@@ -2396,13 +2487,13 @@ struct Meander : Module
 							case IN_ENABLE_ARP_SCALER_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theArpParms.scaler = true;
+									theMeanderState.theArpParms.scaler = true;
 									theMeanderState.theArpParms.chordal = false;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theArpParms.scaler = false;
+									theMeanderState.theArpParms.scaler = false;
 									theMeanderState.theArpParms.chordal = true;
 								}
 								else
@@ -2432,10 +2523,10 @@ struct Meander : Module
 
 							case IN_BASS_ENABLE_EXT_CV:
 								if (fvalue>0)
-									theMeanderState. theBassParms.enabled = true;
+									theMeanderState.theBassParms.enabled = true;
 								else
 								if (fvalue==0)
-									theMeanderState. theBassParms.enabled = false;
+									theMeanderState.theBassParms.enabled = false;
 								else
 								if (fvalue<0) 
 								{
@@ -2487,12 +2578,12 @@ struct Meander : Module
 							case IN_ENABLE_BASS_STACCATO_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theBassParms.enable_staccato = true;
+									theMeanderState.theBassParms.enable_staccato = true;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theBassParms.enable_staccato = false;
+									theMeanderState.theBassParms.enable_staccato = false;
 								}
 								else
 								if (fvalue<0) 
@@ -2504,12 +2595,12 @@ struct Meander : Module
 							case IN_BASS_ACCENT_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theBassParms.accent = true;
+									theMeanderState.theBassParms.accent = true;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theBassParms.accent = false;
+									theMeanderState.theBassParms.accent = false;
 								}
 								else
 								if (fvalue<0) 
@@ -2522,12 +2613,12 @@ struct Meander : Module
 							case IN_BASS_SYNCOPATE_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theBassParms.syncopate = true;
+									theMeanderState.theBassParms.syncopate = true;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theBassParms.syncopate = false;
+									theMeanderState.theBassParms.syncopate = false;
 								}
 								else
 								if (fvalue<0) 
@@ -2539,12 +2630,12 @@ struct Meander : Module
 							case IN_BASS_SHUFFLE_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theBassParms.shuffle = true;
+									theMeanderState.theBassParms.shuffle = true;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theBassParms.shuffle = false;
+									theMeanderState.theBassParms.shuffle = false;
 								}
 								else
 								if (fvalue<0) 
@@ -2556,12 +2647,12 @@ struct Meander : Module
 							case IN_BASS_OCTAVES_EXT_CV:
 								if (fvalue>0)
 								{
-									theMeanderState. theBassParms.octave_enabled = true;
+									theMeanderState.theBassParms.octave_enabled = true;
 								}
 								else
 								if (fvalue==0)
 								{
-									theMeanderState. theBassParms.octave_enabled = false;
+									theMeanderState.theBassParms.octave_enabled = false;
 								}
 								else
 								if (fvalue<0) 
@@ -3093,6 +3184,8 @@ struct Meander : Module
 		configParam(BUTTON_CIRCLESTEP_BB_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(BUTTON_CIRCLESTEP_F_PARAM, 0.f, 1.f, 0.f, "");
 
+		configParam(BUTTON_PROG_STEP_PARAM, 0.f, 1.f, 0.f, "");
+
 	}  // end Meander()
 	
 };
@@ -3148,21 +3241,20 @@ struct ScaleSelectLineDisplay : TransparentWidget {
 
 	void draw(const DrawArgs &ctx) override {
 
-	
-		Vec pos = Vec(45,-11); 
+		Vec pos = Vec(60,12); 
 	
 		// Background
 		NVGcolor backgroundColor = nvgRGB(0x0, 0x0, 0x0);
 		NVGcolor borderColor = nvgRGB(0x10, 0x10, 0x10);
 		nvgBeginPath(ctx.vg);
-		nvgRoundedRect(ctx.vg, 0.0, -22.0, box.size.x, box.size.y, 4.0);
+		nvgRoundedRect(ctx.vg, 0.0, 0, box.size.x, box.size.y, 4.0);
 		nvgFillColor(ctx.vg, backgroundColor);
 		nvgFill(ctx.vg);
 		nvgStrokeWidth(ctx.vg, 1.0);
 		nvgStrokeColor(ctx.vg, borderColor);
 		nvgStroke(ctx.vg);
 	 
-		nvgFontSize(ctx.vg, 12);
+		nvgFontSize(ctx.vg, 16);
 		nvgFontFaceId(ctx.vg, font->handle);
 		nvgTextLetterSpacing(ctx.vg, -1);
 		nvgTextAlign(ctx.vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
@@ -3174,8 +3266,6 @@ struct ScaleSelectLineDisplay : TransparentWidget {
 		nvgText(ctx.vg, pos.x, pos.y, text, NULL);
 
 		// add on the scale notes display out of this box
-		nvgFillColor(ctx.vg, nvgRGBA(0xff, 0xff, 0xff, 0xFF));
-		nvgText(ctx.vg, pos.x-35, pos.y+39,"                        ", NULL);  // erase current content
 		nvgFillColor(ctx.vg, nvgRGBA(0x00, 0x0, 0x0, 0xFF));
 		strcpy(text,"");
 		for (int i=0;i<mode_step_intervals[mode][0];++i)
@@ -3184,7 +3274,7 @@ struct ScaleSelectLineDisplay : TransparentWidget {
 			strcat(text," ");
 		}
 		
-		nvgText(ctx.vg, pos.x-35, pos.y+39, text, NULL);
+		nvgText(ctx.vg, pos.x, pos.y+24, text, NULL);
 	
 		
 	} 
@@ -3642,19 +3732,19 @@ struct MeanderWidget : ModuleWidget
 			
 		}
 
-	
-		void drawLabelAbove(const DrawArgs &args, Rect rect, const char* label)  // test draw a rounded corner rect  for jack border testing
+		void drawLabelAbove(const DrawArgs &args, Rect rect, const char* label, float fontSize)  
 		{
 			nvgBeginPath(args.vg);
 			nvgFillColor(args.vg, nvgRGBA( 0x0,  0x0, 0x0, 0xff));
-			nvgFontSize(args.vg, 10);
+			nvgFontSize(args.vg, fontSize);
 			nvgFontFaceId(args.vg, textfont->handle);
 			nvgTextLetterSpacing(args.vg, -1);
 			nvgTextAlign(args.vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
-			nvgText(args.vg, rect.pos.x+rect.size.x/2.,rect.pos.y-4, label, NULL);
+		//	nvgText(args.vg, rect.pos.x+rect.size.x/2.,rect.pos.y-4, label, NULL);
+			nvgText(args.vg, rect.pos.x+rect.size.x/2.,rect.pos.y-8, label, NULL);
 		}
 
-		void drawLabelRight(const DrawArgs &args, Rect rect, const char* label)  // test draw a rounded corner rect  for jack border testing
+		void drawLabelRight(const DrawArgs &args, Rect rect, const char* label)  
 		{
 			nvgBeginPath(args.vg);
 			nvgFillColor(args.vg, nvgRGBA( 0x0,  0x0, 0x0, 0xff));
@@ -3665,7 +3755,7 @@ struct MeanderWidget : ModuleWidget
 			nvgText(args.vg, rect.pos.x+rect.size.x+2, rect.pos.y+rect.size.y/2., label, NULL);
 		}
 
-		void drawLabelLeft(const DrawArgs &args, Rect rect, const char* label)  // test draw a rounded corner rect  for jack border testing
+		void drawLabelLeft(const DrawArgs &args, Rect rect, const char* label)  
 		{
 			nvgBeginPath(args.vg);
 			nvgFillColor(args.vg, nvgRGBA( 0x0,  0x0, 0x0, 0xff));
@@ -3775,13 +3865,13 @@ struct MeanderWidget : ModuleWidget
 					if (i==0)
 					{
 						sprintf(labeltext, "Set Step");
-						drawLabelAbove(args, ParameterRect[Meander::BUTTON_HARMONY_SETSTEP_1_PARAM+i], labeltext);  
+						drawLabelAbove(args, ParameterRect[Meander::BUTTON_HARMONY_SETSTEP_1_PARAM+i], labeltext, 15.);  
 					}
 					sprintf(labeltext, "%d", i+1);
 					drawLabelLeft(args, ParameterRect[Meander::BUTTON_HARMONY_SETSTEP_1_PARAM+i], labeltext);  
 				}
 
-
+              
 
 				//***************
 				// update harmony panel begin
@@ -3817,6 +3907,9 @@ struct MeanderWidget : ModuleWidget
 
 				snprintf(labeltext, sizeof(labeltext), "Presets");
 				drawHarmonyControlParamLine(args, ParameterRect[Meander::CONTROL_HARMONYPRESETS_PARAM].pos, labeltext, 0, -1);
+				
+				snprintf(labeltext, sizeof(labeltext), " STEP");
+				drawHarmonyControlParamLine(args, ParameterRect[Meander::BUTTON_PROG_STEP_PARAM].pos, labeltext, 0, -1);
  
 				//  do the progression displays
 				pos = ParameterRect[Meander::CONTROL_HARMONYPRESETS_PARAM].pos.plus(Vec(0,20));
@@ -3919,7 +4012,7 @@ struct MeanderWidget : ModuleWidget
 				nvgMoveTo(args.vg, 
 				pos.x, pos.y);
 				pos=pos.plus(Vec(190,0));
-				nvgLineTo(args.vg, pos.x, pos.y);
+				nvgLineTo(args.vg, pos.x, pos.y);  
 				nvgStrokeColor(args.vg, nvgRGB(0, 0, 0));
 				nvgStrokeWidth(args.vg, 1.0);
 				nvgStroke(args.vg);
@@ -4085,7 +4178,7 @@ struct MeanderWidget : ModuleWidget
 				snprintf(labeltext, sizeof(labeltext), "Period Sec. (1-100)");
 				drawfBmControlParamLine(args, ParameterRect[Meander::CONTROL_MELODY_FBM_PERIOD_PARAM].pos, labeltext, theMeanderState.theMelodyParms.period, 1);
 
-				snprintf(labeltext, sizeof(labeltext), "Arp");
+				snprintf(labeltext, sizeof(labeltext), "32nds");
 				drawfBmControlParamLine(args, ParameterRect[Meander::CONTROL_ARP_FBM_OCTAVES_PARAM].pos.plus(Vec(47,-13)), labeltext, 0, -1);
 
 				snprintf(labeltext, sizeof(labeltext), "Octaves (1-6)");
@@ -4100,29 +4193,29 @@ struct MeanderWidget : ModuleWidget
 			if (true)  // draw rounded corner rects  for input jacks border 
 			{
 				char labeltext[128];
-				snprintf(labeltext, sizeof(labeltext), "EXT");
-				drawLabelAbove(args, InportRect[Meander::IN_RUN_EXT_CV], labeltext);
+			//	snprintf(labeltext, sizeof(labeltext), "EXT");
+			//	drawLabelAbove(args, InportRect[Meander::IN_RUN_EXT_CV], labeltext, 15.);
 
 				snprintf(labeltext, sizeof(labeltext), "RUN");
-				drawLabelAbove(args, ParameterRect[Meander::BUTTON_RUN_PARAM], labeltext);
+				drawLabelAbove(args, ParameterRect[Meander::BUTTON_RUN_PARAM], labeltext, 12.);
 
 				snprintf(labeltext, sizeof(labeltext), "OUT");
 				drawOutport(args, OutportRect[Meander::OUT_RUN_OUT].pos, labeltext, 0, 1);
 				
-				snprintf(labeltext, sizeof(labeltext), "EXT");
-				drawLabelAbove(args, InportRect[Meander::IN_RESET_EXT_CV], labeltext);
+			//	snprintf(labeltext, sizeof(labeltext), "EXT");
+			//	drawLabelAbove(args, InportRect[Meander::IN_RESET_EXT_CV], labeltext, 15.);
 
 				snprintf(labeltext, sizeof(labeltext), "RESET");
-				drawLabelAbove(args, ParameterRect[Meander::BUTTON_RESET_PARAM], labeltext);
+				drawLabelAbove(args, ParameterRect[Meander::BUTTON_RESET_PARAM], labeltext, 12.);
 				
 				snprintf(labeltext, sizeof(labeltext), "OUT");
 				drawOutport(args, OutportRect[Meander::OUT_RESET_OUT].pos, labeltext, 0, 1);
 				
-				snprintf(labeltext, sizeof(labeltext), "EXT");
-				drawLabelAbove(args, InportRect[Meander::IN_TEMPO_EXT_CV], labeltext);
+			//	snprintf(labeltext, sizeof(labeltext), "EXT");
+			//	drawLabelAbove(args, InportRect[Meander::IN_TEMPO_EXT_CV], labeltext, 15.);
 
 				snprintf(labeltext, sizeof(labeltext), "BPM");
-				drawLabelAbove(args, ParameterRect[Meander::CONTROL_TEMPOBPM_PARAM], labeltext);
+				drawLabelAbove(args, ParameterRect[Meander::CONTROL_TEMPOBPM_PARAM], labeltext, 12.);
 
 				snprintf(labeltext, sizeof(labeltext), "Time Sig Top");
 				drawLabelRight(args, ParameterRect[Meander::CONTROL_TIMESIGNATURETOP_PARAM], labeltext);
@@ -4137,7 +4230,7 @@ struct MeanderWidget : ModuleWidget
 				drawLabelRight(args, ParameterRect[Meander::CONTROL_SCALE_PARAM], labeltext);
 
 				snprintf(labeltext, sizeof(labeltext), "EXT");
-				drawLabelAbove(args, InportRect[Meander::IN_CLOCK_EXT_CV], labeltext);
+				drawLabelAbove(args, InportRect[Meander::IN_CLOCK_EXT_CV], labeltext, 12.);
 				snprintf(labeltext, sizeof(labeltext), "  Clock");
 				drawLabelRight(args, InportRect[Meander::IN_CLOCK_EXT_CV], labeltext);
 				
@@ -4192,7 +4285,7 @@ struct MeanderWidget : ModuleWidget
 				snprintf(labeltext, sizeof(labeltext), "Harmony");
 				drawOutport(args, OutportRect[Meander::OUT_FBM_HARMONY_OUTPUT].pos, labeltext, 0, 1);
 
-				snprintf(labeltext, sizeof(labeltext), "Arp");
+				snprintf(labeltext, sizeof(labeltext), "32nds");
 				drawOutport(args, OutportRect[Meander::OUT_FBM_ARP_OUTPUT].pos, labeltext, 0, 1);
 
 				snprintf(labeltext, sizeof(labeltext), "Bar");
@@ -4204,6 +4297,11 @@ struct MeanderWidget : ModuleWidget
 				snprintf(labeltext, sizeof(labeltext), "Beatx2");
 				drawOutport(args, OutportRect[Meander::OUT_CLOCK_BEATX2_OUTPUT].pos, labeltext, 0, 1);
 
+				snprintf(labeltext, sizeof(labeltext), "1ms Clocked Trigger Pulses");
+				rack::math::Rect rect=OutportRect[Meander::OUT_CLOCK_BEATX2_OUTPUT];
+				rect.pos=rect.pos.plus(Vec(0,-16));
+				drawLabelAbove(args, rect, labeltext, 18.);
+				
 				snprintf(labeltext, sizeof(labeltext), "Beatx4");
 				drawOutport(args, OutportRect[Meander::OUT_CLOCK_BEATX4_OUTPUT].pos, labeltext, 0, 1);
 
@@ -4299,19 +4397,19 @@ struct MeanderWidget : ModuleWidget
 			nvgTextLetterSpacing(args.vg, -1);
 			nvgFillColor(args.vg, nvgRGBA(0x0, 0x0, 0x0, 0xFF));
 
-			pos=Vec(beginEdge+30, beginTop+105);  
+			pos=Vec(beginEdge+30, beginTop+95);  
 			snprintf(text, sizeof(text), "In");
 			nvgText(args.vg, pos.x, pos.y, text, NULL);
 
-			pos=Vec(beginEdge+30, beginTop+135);  
+			pos=Vec(beginEdge+30, beginTop+115);  
 			snprintf(text, sizeof(text), "In");
 			nvgText(args.vg, pos.x, pos.y, text, NULL);
 
-			pos=Vec(beginEdge+82, beginTop+105);   
+			pos=Vec(beginEdge+82, beginTop+95);   
 			snprintf(text, sizeof(text), "Degree");
 			nvgText(args.vg, pos.x, pos.y, text, NULL);
 
-			pos=Vec(beginEdge+76, beginTop+135);  
+			pos=Vec(beginEdge+76, beginTop+115);  
 			snprintf(text, sizeof(text), "Gate");
 			nvgText(args.vg, pos.x, pos.y, text, NULL);
 
@@ -4592,51 +4690,71 @@ struct MeanderWidget : ModuleWidget
 			// write last melody note played 
 			pos=convertSVGtoNVG(261.4, 120.3, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
 			snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState.theMelodyParms.last[0].note%12)], (int)(theMeanderState.theMelodyParms.last[0].note/12 ));
+			nvgFillColor(args.vg, nvgRGBA(0x0, 0x0, 0x0, 0xFF)); 
 			nvgText(args.vg, pos.x, pos.y, text, NULL);
+			nvgFillColor(args.vg, nvgRGBA(0x0, 0x0, 0x0, 0xFF)); 
 
 			// write last arp note played 
 			if (theMeanderState.theArpParms.note_count>0)
 			{
-			pos=convertSVGtoNVG(261.4, 120.3, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
-			snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState.theArpParms.last[theMeanderState.theArpParms.note_count].note%12)], (int)(theMeanderState.theArpParms.last[theMeanderState.theArpParms.note_count].note/12 ));
-			nvgText(args.vg, pos.x+20, pos.y+200, text, NULL);
+				pos=convertSVGtoNVG(261.4, 120.3, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
+				snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState.theArpParms.last[theMeanderState.theArpParms.note_count].note%12)], (int)(theMeanderState.theArpParms.last[theMeanderState.theArpParms.note_count].note/12 ));
+				nvgFillColor(args.vg, nvgRGBA(0x0, 0x0, 0xFF, 0xFF)); 
+				nvgText(args.vg, pos.x+20, pos.y+200, text, NULL);
+				nvgFillColor(args.vg, nvgRGBA(0x0, 0x0, 0x0, 0xFF)); 
 			}
 			
 			// write last harmony note played 1
 			pos=convertSVGtoNVG(187.8, 119.8, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
-			snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState. theHarmonyParms.last[0].note%12)] , theMeanderState. theHarmonyParms.last[0].note/12);
+			snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState.theHarmonyParms.last[0].note%12)] , theMeanderState.theHarmonyParms.last[0].note/12);
+			nvgFillColor(args.vg, nvgRGBA(0xFF, 0x0, 0x0, 0xFF)); 
 			nvgText(args.vg, pos.x, pos.y, text, NULL);
+			nvgFillColor(args.vg, nvgRGBA(0x0, 0x0, 0x0, 0xFF)); 
 
 			// write last harmony note played 2
 			pos=convertSVGtoNVG(199.1, 119.8, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
-			snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState. theHarmonyParms.last[1].note%12)], theMeanderState. theHarmonyParms.last[1].note/12);
+			snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState.theHarmonyParms.last[1].note%12)], theMeanderState.theHarmonyParms.last[1].note/12);
+			nvgFillColor(args.vg, nvgRGBA(0xFF, 0x0, 0x0, 0xFF)); 
 			nvgText(args.vg, pos.x, pos.y, text, NULL);
+			nvgFillColor(args.vg, nvgRGBA(0x0, 0x0, 0x0, 0xFF)); 
 
 			// write last harmony note played 3
 			pos=convertSVGtoNVG(210.4, 119.8, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
-			snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState. theHarmonyParms.last[2].note%12)], theMeanderState. theHarmonyParms.last[2].note/12);
+			snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState.theHarmonyParms.last[2].note%12)], theMeanderState.theHarmonyParms.last[2].note/12);
+			nvgFillColor(args.vg, nvgRGBA(0xFF, 0x0, 0x0, 0xFF)); 
 			nvgText(args.vg, pos.x, pos.y, text, NULL);
+			nvgFillColor(args.vg, nvgRGBA(0x0, 0x0, 0x0, 0xFF)); 
 
-			// write last harmony note played 4
-			pos=convertSVGtoNVG(221.7, 119.8, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
-			snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState. theHarmonyParms.last[3].note%12)], theMeanderState. theHarmonyParms.last[3].note/12);
+			if ((theMeanderState.theHarmonyParms.enable_all_7ths)||(theMeanderState.theHarmonyParms.last_chord_type==3)||(theMeanderState.theHarmonyParms.last_chord_type==4)||(theMeanderState.theHarmonyParms.last_chord_type==5))
+			{
+				pos=convertSVGtoNVG(221.7, 119.8, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
+				snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState.theHarmonyParms.last[3].note%12)], theMeanderState.theHarmonyParms.last[3].note/12);
+				nvgFillColor(args.vg, nvgRGBA(0xFF, 0x0, 0x0, 0xFF)); 
+				nvgText(args.vg, pos.x, pos.y, text, NULL);
+				nvgFillColor(args.vg, nvgRGBA(0x0, 0x0, 0x0, 0xFF)); 
+			}
 					
 			// write last bass note played 
 			pos=convertSVGtoNVG(319.1, 121.0, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
 			snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState.theBassParms.last[0].note%12)], (theMeanderState.theBassParms.last[0].note/12));
+			nvgFillColor(args.vg, nvgRGBA(0x0, 0xFF, 0x0, 0xFF)); 
 			nvgText(args.vg, pos.x, pos.y, text, NULL);
+			nvgFillColor(args.vg, nvgRGBA(0x0, 0x0, 0x0, 0xFF)); 
 
 			// write last octave bass note played 
 			if (theMeanderState.theBassParms.octave_enabled)
 			{
 				pos=convertSVGtoNVG(330.1, 121.0, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
 				snprintf(text, sizeof(text), "%s%d", note_desig[(theMeanderState.theBassParms.last[1].note%12)], (theMeanderState.theBassParms.last[1].note/12));
+				nvgFillColor(args.vg, nvgRGBA(0x0, 0xFF, 0x0, 0xFF)); 
 				nvgText(args.vg, pos.x, pos.y, text, NULL);
+				nvgFillColor(args.vg, nvgRGBA(0x0, 0x0, 0x0, 0xFF)); 
 			}
 
 			int last_chord_root=theMeanderState.last_harmony_chord_root_note%12;
 			int last_chord_bass_note=theMeanderState.theHarmonyParms.last[0].note%12;
-			pos=convertSVGtoNVG(110, 60, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
+		//	pos=convertSVGtoNVG(110, 60, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
+			pos=convertSVGtoNVG(110, 62, 12.1, 6.5);  // X,Y,W,H in Inkscape mm units
 			nvgFontSize(args.vg, 30);
 
 			char chord_type_desc[16];
@@ -4707,8 +4825,8 @@ struct MeanderWidget : ModuleWidget
 			MeanderRootKeySelectDisplay->box.size = Vec(40, 22); 
 			addChild(MeanderRootKeySelectDisplay);
 
-			ScaleSelectLineDisplay *MeanderScaleSelectDisplay = createWidget<ScaleSelectLineDisplay>(Vec(70.,220.));  
-			MeanderScaleSelectDisplay->box.size = Vec(90, 22); 
+			ScaleSelectLineDisplay *MeanderScaleSelectDisplay = createWidget<ScaleSelectLineDisplay>(Vec(40.,225.));  
+			MeanderScaleSelectDisplay->box.size = Vec(120, 22); 
 			addChild(MeanderScaleSelectDisplay);
 
 			CircleOf5thsDisplay *display = new CircleOf5thsDisplay();
@@ -5159,6 +5277,13 @@ struct MeanderWidget : ModuleWidget
 			
 			paramWidgets[Meander::CONTROL_ARP_FBM_PERIOD_PARAM]=createParamCentered<Trimpot>(mm2px(Vec(358, 59)), module, Meander::CONTROL_ARP_FBM_PERIOD_PARAM);
 			addParam(paramWidgets[Meander::CONTROL_ARP_FBM_PERIOD_PARAM]);
+
+			// Progression control
+
+			paramWidgets[Meander::BUTTON_PROG_STEP_PARAM]=createParamCentered<LEDButton>(mm2px(Vec(350, 250)), module, Meander::BUTTON_PROG_STEP_PARAM);
+			addParam(paramWidgets[Meander::BUTTON_PROG_STEP_PARAM]);
+			lightWidgets[Meander::LIGHT_LEDBUTTON_PROG_STEP_PARAM]=createLightCentered<MediumLight<RedLight>>(mm2px(Vec(350, 250)), module, Meander::LIGHT_LEDBUTTON_PROG_STEP_PARAM);
+			addChild(lightWidgets[Meander::LIGHT_LEDBUTTON_PROG_STEP_PARAM]);
 			
 					 
 	//**************  
@@ -5167,8 +5292,13 @@ struct MeanderWidget : ModuleWidget
 		
 			for (int i=0; i<Meander::NUM_INPUTS; ++i)
 			{
-				inPortWidgets[i]=createInputCentered<TinyPJ301MPort>(mm2px(Vec(10*i,5)), module, i);
-			    addInput(inPortWidgets[i]);
+				if (i==Meander::IN_HARMONY_DESTUTTER_EXT_CV)  // this inport is not used, so set to null
+					inPortWidgets[i]=NULL;
+				else
+				{
+					inPortWidgets[i]=createInputCentered<TinyPJ301MPort>(mm2px(Vec(10*i,5)), module, i);  // temporarily place them along the top before they are repositioned above
+					addInput(inPortWidgets[i]);
+				}
 			}
 
 	// add output ports		
@@ -5230,7 +5360,7 @@ struct MeanderWidget : ModuleWidget
 			outPortWidgets[Meander::OUT_FBM_ARP_OUTPUT]=createOutputCentered<PJ301MPort>(mm2px(Vec(380.0, 124.831)), module, Meander::OUT_FBM_ARP_OUTPUT);
 			addOutput(outPortWidgets[Meander::OUT_FBM_ARP_OUTPUT]);
 
-			
+						
 			//**********************************
 
 			// now, procedurally rearrange the control param panel locations
@@ -5288,29 +5418,30 @@ struct MeanderWidget : ModuleWidget
 
 
 			// relayout all param controls and lights
-
-			Vec drawCenter=Vec(20., 30.);
+		
+			Vec drawCenter=Vec(5., 30.);
 			
 			// do upper left controls and ports
-			drawCenter=drawCenter.plus(Vec(40,0));
+			drawCenter=drawCenter.plus(Vec(37,0));
 			paramWidgets[Meander::BUTTON_RUN_PARAM]->box.pos=drawCenter.minus(paramWidgets[Meander::BUTTON_RUN_PARAM]->box.size.div(2.));
 			lightWidgets[Meander::LIGHT_LEDBUTTON_RUN]->box.pos=drawCenter.minus(lightWidgets[Meander::LIGHT_LEDBUTTON_RUN]->box.size.div(2.));
-			drawCenter=drawCenter.plus(Vec(40,0));
+			drawCenter=drawCenter.plus(Vec(37,0));
 			outPortWidgets[Meander::OUT_RUN_OUT]->box.pos=drawCenter.minus(outPortWidgets[Meander::OUT_RUN_OUT]->box.size.div(2.));
 			
-			drawCenter=drawCenter.minus(Vec(40,0));
+			drawCenter=drawCenter.minus(Vec(37,0)); 
 			drawCenter=drawCenter.plus(Vec(0,40));
 	
 			paramWidgets[Meander::BUTTON_RESET_PARAM]->box.pos=drawCenter.minus(paramWidgets[Meander::BUTTON_RESET_PARAM]->box.size.div(2.));
 			lightWidgets[Meander::LIGHT_LEDBUTTON_RESET]->box.pos=drawCenter.minus(lightWidgets[Meander::LIGHT_LEDBUTTON_RESET]->box.size.div(2.));
-			drawCenter=drawCenter.plus(Vec(40,0));
+			drawCenter=drawCenter.plus(Vec(37,0));
 			outPortWidgets[Meander::OUT_RESET_OUT]->box.pos=drawCenter.minus(outPortWidgets[Meander::OUT_RESET_OUT]->box.size.div(2.));
 
-			drawCenter=Vec(47., 110.);
+			drawCenter=Vec(42., 110.);
 			
 			paramWidgets[Meander::CONTROL_TEMPOBPM_PARAM]->box.pos=drawCenter.minus(paramWidgets[Meander::CONTROL_TEMPOBPM_PARAM]->box.size.div(2.));
 				
-			drawCenter=drawCenter.plus(Vec(-15,25));
+			drawCenter=drawCenter.plus(Vec(0,25));
+			
 			paramWidgets[Meander::CONTROL_TIMESIGNATURETOP_PARAM]->box.pos=drawCenter.minus(paramWidgets[Meander::CONTROL_TIMESIGNATURETOP_PARAM]->box.size.div(2.));
 			drawCenter=drawCenter.plus(Vec(0,25));
 			paramWidgets[Meander::CONTROL_TIMESIGNATUREBOTTOM_PARAM]->box.pos=drawCenter.minus(paramWidgets[Meander::CONTROL_TIMESIGNATUREBOTTOM_PARAM]->box.size.div(2.));
@@ -5401,8 +5532,7 @@ struct MeanderWidget : ModuleWidget
 			drawCenter=drawCenter.plus(Vec(90,0));
 			paramWidgets[Meander::BUTTON_ENABLE_ARP_SCALER_PARAM]->box.pos=drawCenter.minus(paramWidgets[Meander::BUTTON_ENABLE_ARP_SCALER_PARAM]->box.size.div(2.));
 			lightWidgets[Meander::LIGHT_LEDBUTTON_ARP_ENABLE_SCALER]->box.pos=drawCenter.minus(lightWidgets[Meander::LIGHT_LEDBUTTON_ARP_ENABLE_SCALER]->box.size.div(2.));
-		//	drawCenter=drawCenter.plus(Vec(-90,22));
-					
+							
 			drawCenter=Vec(900., 130.);
 		
 			paramWidgets[Meander::BUTTON_ENABLE_BASS_PARAM]->box.pos=drawCenter.minus(paramWidgets[Meander::BUTTON_ENABLE_BASS_PARAM]->box.size.div(2.));
@@ -5431,7 +5561,6 @@ struct MeanderWidget : ModuleWidget
 			
 			// fBm controls
 
-		//	drawCenter=Vec(1055., 57.);
 			drawCenter=Vec(1055., 150.);
 
 			paramWidgets[Meander::CONTROL_HARMONY_FBM_OCTAVES_PARAM]->box.pos=drawCenter.minus(paramWidgets[Meander::CONTROL_HARMONY_FBM_OCTAVES_PARAM]->box.size.div(2.));
@@ -5447,14 +5576,18 @@ struct MeanderWidget : ModuleWidget
 			paramWidgets[Meander::CONTROL_ARP_FBM_PERIOD_PARAM]->box.pos=drawCenter.minus(paramWidgets[Meander::CONTROL_ARP_FBM_PERIOD_PARAM]->box.size.div(2.));
 			drawCenter=drawCenter.plus(Vec(0,22));
 
-
+		
+			drawCenter=Vec(345., 250.);
+			paramWidgets[Meander::BUTTON_PROG_STEP_PARAM]->box.pos=drawCenter.minus(paramWidgets[Meander::BUTTON_PROG_STEP_PARAM]->box.size.div(2.));
+			lightWidgets[Meander::LIGHT_LEDBUTTON_PROG_STEP_PARAM]->box.pos=drawCenter.minus(lightWidgets[Meander::LIGHT_LEDBUTTON_PROG_STEP_PARAM]->box.size.div(2.));
+		
 			// re-layout all input ports.  Work around parm and input enum value mismatch due to history
 			for (int i=0; i<Meander::NUM_INPUTS; ++i)
 			{
 				if (i<=Meander::IN_SCALE_EXT_CV)
 				{
 					if ((inPortWidgets[i]!=NULL)&&(paramWidgets[i]!=NULL))
-						inPortWidgets[i]->box.pos= paramWidgets[i]->box.pos.minus(Vec(20,0));
+						inPortWidgets[i]->box.pos= paramWidgets[i]->box.pos.minus(Vec(20,-1));
 				}
 				else
 				if (i==Meander::IN_CLOCK_EXT_CV)
@@ -5465,20 +5598,21 @@ struct MeanderWidget : ModuleWidget
 				else
 				if (i==Meander::IN_HARMONY_CIRCLE_POSITION_EXT_CV)
 				{
-					Vec drawCenter=Vec(345., 220.);
+					Vec drawCenter=Vec(345., 210.);
 					inPortWidgets[Meander::IN_HARMONY_CIRCLE_POSITION_EXT_CV]->box.pos=drawCenter.minus(inPortWidgets[Meander::IN_HARMONY_CIRCLE_POSITION_EXT_CV]->box.size.div(2.));
 				}
 				else
 				if (i==Meander::IN_HARMONY_CIRCLE_GATE_EXT_CV)
 				{
-					Vec drawCenter=drawCenter.plus(Vec(345., 250.));
+				//	Vec drawCenter=drawCenter.plus(Vec(345., 230.));  // this line was causing misplaced inport
+					Vec drawCenter=Vec(345., 230.);
 					inPortWidgets[Meander::IN_HARMONY_CIRCLE_GATE_EXT_CV]->box.pos=drawCenter.minus(inPortWidgets[Meander::IN_HARMONY_CIRCLE_GATE_EXT_CV]->box.size.div(2.));
 				}
 				else
 				{
 					int parmIndex=Meander::BUTTON_ENABLE_MELODY_PARAM+i-Meander::IN_HARMONY_CIRCLE_GATE_EXT_CV-1;
 					if ((inPortWidgets[i]!=NULL)&&(paramWidgets[parmIndex]!=NULL))
-						inPortWidgets[i]->box.pos= paramWidgets[parmIndex]->box.pos.minus(Vec(20,0));
+						inPortWidgets[i]->box.pos= paramWidgets[parmIndex]->box.pos.minus(Vec(20,-1));
 				}
 				
 			}
@@ -5529,6 +5663,9 @@ struct MeanderWidget : ModuleWidget
 			outPortWidgets[Meander::OUT_CLOCK_BEATX8_OUTPUT]->box.pos=drawCenter.minus(outPortWidgets[Meander::OUT_CLOCK_BEATX8_OUTPUT]->box.size.div(2.));
 			drawCenter=drawCenter.plus(Vec(40,0));
 
+
+			
+
 			 
 			//********************
 		//	if ((module) &&(module->instanceRunning)) 
@@ -5550,6 +5687,8 @@ struct MeanderWidget : ModuleWidget
 					InportRect[i]=inPortWidgets[i]->box;
 				lastInputPortValue[i]=-999;  // initial out of range value
 			}
+
+
 		
 		}
 
