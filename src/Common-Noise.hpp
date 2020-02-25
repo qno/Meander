@@ -9,7 +9,7 @@
 
 #define B 0x100
 #define BM 0xff
-#define N 0x1000000     // This needs to be a very large value so that when setup adds a value to it it is always positive, regardless of size of argument which may get quite large in fracal sums
+#define NN 0x1000000     // This needs to be a very large value so that when setup adds a value to it it is always positive, regardless of size of argument which may get quite large in fracal sums
 
 int pp[512];  // used by npnoise functions
 int permutation[] = { 151,160,137,91,90,15,
@@ -34,7 +34,7 @@ double g1[B + B + 2];     // 1D
 double g2[B + B + 2][2];  // 2D
 double g3[B + B + 2][3];  // 3D 
 
-#define setup(i,b0,b1,r0,r1) t = vec[i] + N; b0 = ((int)t) & BM; b1 = (b0+1) & BM; r0 = t - (int)t; r1 = r0 - 1.;
+#define setup(i,b0,b1,r0,r1) t = vec[i] + NN; b0 = ((int)t) & BM; b1 = (b0+1) & BM; r0 = t - (int)t; r1 = r0 - 1.;
 
 
 static double g_precomputed[][3]= {
@@ -589,7 +589,7 @@ static double pnoise1(double vec[])
     int bx0=0, bx1=0;
     double rx0=0., rx1=0., sx=0., t=0., u=0., v=0.;
 
-    //  #define setup(i,b0,b1,r0,r1) t = vec[i] + N; b0 = ((int)t) & BM; b1 = (b0+1) & BM; r0 = t - (int)t; r1 = r0 - 1.;
+    //  #define setup(i,b0,b1,r0,r1) t = vec[i] + NN; b0 = ((int)t) & BM; b1 = (b0+1) & BM; r0 = t - (int)t; r1 = r0 - 1.;
 
 	setup(0, bx0,bx1, rx0,rx1);  // by define this is dependent on vec[0]
        
@@ -691,7 +691,6 @@ static double pnoise3(double vec[])
 // -1 to +1 noise
 double fBm1DNoise(double x,double InversePersistence,double Lacunarity,int n_octaves)
 {
- //DEBUG("fBm1DNoise()");
   
    if (n_octaves<1) n_octaves=1;
    if (n_octaves>6) n_octaves=6;
@@ -708,7 +707,6 @@ double fBm1DNoise(double x,double InversePersistence,double Lacunarity,int n_oct
    for (i=0;i<n_octaves;i++)
    {
       val = pnoise1(p);
-   // DEBUG("val=%lf", val);
       sum += val / scale;
       scale *= InversePersistence;
       p[0] *= Lacunarity;
@@ -1161,7 +1159,6 @@ double FastfBm4DNoise(double x,double y,double z,double w,int n_octaves, bool *N
 
 void initPerlin(void)
 {
-        DEBUG("initPerlin()");
         int i, j;
 
         for (i=0; i< 256; ++i)
